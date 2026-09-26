@@ -32,5 +32,6 @@ writeShellScriptBin "pi" ''
   exec ${lib.getExe pi} \
     --extension "$orchestrator" \
     --extension ${permissions}/${permissions.extensionPath}/src/index.ts \
-    --extension ${permissions}/${permissions.extensionPath}/src/ai-authorizer/index.ts "$@"
+    --extension ${permissions}/${permissions.extensionPath}/src/ai-authorizer/index.ts \
+    --extension ${../extensions}/herdr-notifications.ts "$@"
 ''

@@ -301,11 +301,11 @@
     "pi-interactive-subagents": {
       "flake": false,
       "locked": {
-        "lastModified": 1789750202,
-        "narHash": "sha256-oalFKWRFtqg/9TUh9NwdbtnmGaOwwRrxn7/+lzvZqCY=",
+        "lastModified": 1790435468,
+        "narHash": "sha256-RjkzJaDJwxMU4B1TydNjNmebD9Y0+OtJYVYUBB+QwKU=",
         "owner": "Audrique",
         "repo": "pi-interactive-subagents",
-        "rev": "2f7965c4ba020314e33f411c5c0a52e27832be6e",
+        "rev": "fd373632d4ae7d36eb232e224e43ee81ca6157fa",
         "type": "github"
       },
       "original": {

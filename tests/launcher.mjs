@@ -13,6 +13,7 @@ const subagents = requiredPath("PI_SUBAGENTS_EXTENSION");
 const permissions = requiredPath("PI_PERMISSIONS_EXTENSION");
 const config = requiredPath("PI_EXPECT_CONFIG");
 const web = requiredPath("PI_EXPECT_WEB");
+const herdrNotifications = requiredPath("PI_EXPECT_HERDR_NOTIFICATIONS");
 const forwarded = ["--model", "test/model", "a prompt with spaces", "", "literal * and $HOME"];
 
 for (const child of [false, true]) {
@@ -35,8 +36,9 @@ for (const child of [false, true]) {
     "--extension", join(subagents, child ? "orchestrator/index.ts" : "index.ts"),
     "--extension", join(permissions, "index.ts"),
     "--extension", join(permissions, "ai-authorizer/index.ts"),
+    "--extension", herdrNotifications,
     ...forwarded,
-  ], "exactly three mandatory extensions must precede unmodified user arguments");
+  ], "exactly four mandatory extensions must precede unmodified user arguments");
   assert.equal(captured.config, config);
   assert.equal(captured.agentDir, "/test/pi agent");
   assert.equal(captured.guarded, launcher);

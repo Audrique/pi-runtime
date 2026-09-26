@@ -141,11 +141,25 @@
                 PI_TEST_LAUNCHER = "${testLauncher}/bin/pi";
                 PI_EXPECT_CONFIG = "${configFile}";
                 PI_EXPECT_WEB = "${plugins.web}/index.ts";
+                PI_EXPECT_HERDR_NOTIFICATIONS = "${./extensions}/herdr-notifications.ts";
                 PI_SUBAGENTS_EXTENSION = "${extensions.subagents}/${extensions.subagents.extensionPath}/pi-extension/subagents";
                 PI_PERMISSIONS_EXTENSION = "${extensions.permissions}/${extensions.permissions.extensionPath}/src";
               }
               ''
                 node ${./tests/launcher.mjs}
+                touch "$out"
+              '';
+          herdr-notifications =
+            pkgs.runCommand "pi-runtime-herdr-notifications-check"
+              {
+                nativeBuildInputs = [ pkgs.nodejs_24 ];
+              }
+              ''
+                cp -r ${./extensions} extensions
+                cp -r ${./tests} tests
+                ln -s ${testDependencies}/node_modules node_modules
+                node node_modules/typescript/bin/tsc --strict --noEmit --skipLibCheck --target es2022 --module nodenext --moduleResolution nodenext --allowImportingTsExtensions extensions/herdr-*.ts
+                node --experimental-strip-types --test tests/herdr-notifications.test.ts tests/herdr-client.test.ts
                 touch "$out"
               '';
           integration =
