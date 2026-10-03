@@ -2,6 +2,7 @@
   lib,
   writeShellScriptBin,
   bash,
+  coreutils,
 }:
 {
   pi,
@@ -22,6 +23,7 @@ writeShellScriptBin "pi" ''
     lib.makeBinPath [
       herdr
       bash
+      coreutils
     ]
   }:"$PATH"
   if [ "''${PI_DOTFILES_SUBAGENT:-}" = 1 ]; then

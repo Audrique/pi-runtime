@@ -5,4 +5,5 @@ console.log(JSON.stringify({
   guarded: process.env.PI_GUARDED_EXECUTABLE,
   web: process.env.PI_WEB_EXTENSION,
   legacyParent: process.env.PI_AGENT_ROUTER_PARENT_SESSION_ID,
+  path: process.env.PATH,
 }));

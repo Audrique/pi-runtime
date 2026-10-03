@@ -24,6 +24,7 @@ for (const child of [false, true]) {
     PI_GUARDED_EXECUTABLE: "/wrong/executable",
     PI_WEB_EXTENSION: "/wrong/web",
     PI_AGENT_ROUTER_PARENT_SESSION_ID: "legacy-parent-must-be-removed",
+    PATH: "",
   };
   if (child) env.PI_DOTFILES_SUBAGENT = "1";
   else delete env.PI_DOTFILES_SUBAGENT;
@@ -44,5 +45,10 @@ for (const child of [false, true]) {
   assert.equal(captured.guarded, launcher);
   assert.equal(captured.web, web);
   assert.equal(captured.legacyParent, undefined, "legacy parent routing must be unset");
+  for (const executable of ["bash", "mv"]) {
+    const utility = spawnSync(executable, ["--version"], { env: { PATH: captured.path }, encoding: "utf8", timeout: 5000 });
+    assert.ifError(utility.error);
+    assert.equal(utility.status, 0, `${executable} must be provided without relying on the caller's PATH`);
+  }
 }
 console.log("Pi launcher check passed: root/child extensions, argument forwarding, and environment contract.");

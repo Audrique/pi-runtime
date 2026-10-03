@@ -189,11 +189,11 @@
     "pi-interactive-subagents": {
       "flake": false,
       "locked": {
-        "lastModified": 1791027713,
-        "narHash": "sha256-szYluyAXL89/Tzgzpf16hPZQo3X9VVloKUcPqGm1SXA=",
+        "lastModified": 1791050009,
+        "narHash": "sha256-oTH7Uk3C30f6FdjMALQgmeebYbZdLGnm8aIFbQb9VWU=",
         "owner": "Audrique",
         "repo": "pi-interactive-subagents",
-        "rev": "4e371e90737311134fe31fb14c98579703402f18",
+        "rev": "f5cb03d7b289624cde43bb26d326d2bc41f8960b",
         "type": "github"
       },
       "original": {

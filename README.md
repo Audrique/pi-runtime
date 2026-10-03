@@ -27,6 +27,8 @@ Then import `homeModules.default`:
 
 The module wraps Pi for both parent and child processes and loads the mandatory
 orchestrator, permission system, AI authorizer, and Herdr notification bridge.
+The launcher supplies Herdr, Bash and Coreutils on PATH, including `mv` for
+atomic subagent completion-record publication.
 All four additional plugins
 (web access, questions, todos, tuicr) are installed from Nix paths, not downloaded
 by Pi on startup. Configuration goes into the Nix store: never include secrets.
