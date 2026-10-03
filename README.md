@@ -6,11 +6,14 @@ pins, and cross-plugin tests—not fork implementation or personal settings.
 
 ## Use
 
-Add this private flake as an input using an SSH-authenticated GitHub account:
+Add this public flake as an input over HTTPS:
 
 ```nix
-inputs.pi-runtime.url = "git+ssh://git@github.com/Audrique/pi-runtime?ref=main";
+inputs.pi-runtime.url = "github:Audrique/pi-runtime/main";
 ```
+
+This repository and its Pi forks are public. Fetching them needs no GitHub
+token, SSH key, or authentication setup, including on NixOS-WSL.
 
 Then import `homeModules.default`:
 
@@ -167,6 +170,5 @@ rerun `nix flake check`. No lockfile-repair helper is required by the current lo
 The tests do not replace a live Herdr/subagent smoke test.
 
 Update and publish each fork first, update/test its pin here, then update this
-flake's pin in dotfiles with `nix flake update pi-runtime`. Each machine fetching
-this private input needs SSH access to the repository; do not put credentials in
-flake URLs or configuration.
+flake's pin in dotfiles with `nix flake update pi-runtime`. With the public
+`github:` input above, each machine can fetch it without credentials.
