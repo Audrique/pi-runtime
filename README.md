@@ -38,7 +38,7 @@ The module exposes `package` and `herdrPackage` overrides under
 The launcher includes `extensions/herdr-notifications.ts`; do **not** also install
 Herdr's stock Pi integration, since both would report state for the same pane.
 The bridge requires Pi's `agent_settled` and `ui_prompt_start`/`ui_prompt_end`
-events (available in the pinned Pi 0.85.1), plus the orchestration fork's
+events (introduced by Pi 0.85.1), plus the orchestration fork's
 `pi-orchestrator:activity` / `pi-orchestrator:activity-request` contract.
 Update the orchestration fork and runtime together.
 
@@ -126,15 +126,22 @@ nix flake update pi-interactive-subagents pi-permission-packages
 
 Each fork has its own derivation and runs its own typecheck/tests. The shared
 `dependencies/package.json` and npm lockfile pin a compatible dependency set;
-production dependencies are pruned separately from test tooling. Integration
+production dependencies are pruned separately from test tooling. Pi itself is
+pinned only through the `pi` flake input: test dependencies link `pi-ai`,
+`pi-coding-agent`, and `pi-tui` from that Nix package instead of installing a
+second copy through npm. Plugin Pi peers are supplied by the host CLI; npm peer
+auto-installation is disabled with `--legacy-peer-deps`. Integration
 checks load the installed packages, test parent/child permission routing without
 credentials or live panes, check launcher arguments/environment, and start the
 real Pi CLI with production dependencies only.
 
+To update Pi, run `nix flake update pi`, then `nix flake check`. No npm Pi
+version pins or npm dependency hash changes are needed for a Pi-only update.
+
 To update npm plugins, edit `dependencies/package.json`, then run:
 
 ```sh
-nix develop -c npm install --prefix dependencies --package-lock-only --ignore-scripts --no-audit --no-fund
+nix develop -c npm install --prefix dependencies --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund
 ```
 
 Refresh `npmDepsHash` in `nix/dependencies.nix` using Nix's reported hash, then

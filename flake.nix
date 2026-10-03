@@ -33,7 +33,9 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          dependencies = pkgs.callPackage ./nix/dependencies.nix { };
+          dependencies = pkgs.callPackage ./nix/dependencies.nix {
+            pi = inputs.pi.packages.${system}.default;
+          };
           testDependencies = dependencies.override { production = false; };
           extensions = pkgs.callPackage ./nix/extensions.nix {
             subagentSource = inputs.pi-interactive-subagents;
@@ -128,8 +130,7 @@
                 export PI_OFFLINE=1
                 mkdir -p "$HOME"
                 test "$(${productionLauncher}/bin/pi --version)" = "${
-                  (builtins.fromJSON (builtins.readFile ./dependencies/package.json))
-                  .devDependencies."@earendil-works/pi-coding-agent"
+                  inputs.pi.packages.${system}.default.version
                 }"
                 node ${./tests/cli.mjs}
                 touch "$out"

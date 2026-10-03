@@ -173,11 +173,11 @@
         "nixpkgs-x86_64-darwin": "nixpkgs-x86_64-darwin"
       },
       "locked": {
-        "lastModified": 1790414655,
-        "narHash": "sha256-q5uwNIFd/R42/7ylU/lc5MHltBeWzocoKhjf04AqigA=",
+        "lastModified": 1790889354,
+        "narHash": "sha256-BgOyXSsWukjby09ZgV4g2umGoPNzBqAtHnmGuP+W7Yc=",
         "owner": "lukasl-dev",
         "repo": "pi.nix",
-        "rev": "26640819a9bf3ccc93ecd8f660242971fa75065b",
+        "rev": "5dcf8ed775e341a1eff87590e9f2376c6c35bb05",
         "type": "github"
       },
       "original": {
@@ -189,11 +189,11 @@
     "pi-interactive-subagents": {
       "flake": false,
       "locked": {
-        "lastModified": 1790435468,
-        "narHash": "sha256-RjkzJaDJwxMU4B1TydNjNmebD9Y0+OtJYVYUBB+QwKU=",
+        "lastModified": 1791027713,
+        "narHash": "sha256-szYluyAXL89/Tzgzpf16hPZQo3X9VVloKUcPqGm1SXA=",
         "owner": "Audrique",
         "repo": "pi-interactive-subagents",
-        "rev": "fd373632d4ae7d36eb232e224e43ee81ca6157fa",
+        "rev": "4e371e90737311134fe31fb14c98579703402f18",
         "type": "github"
       },
       "original": {
@@ -206,11 +206,11 @@
     "pi-permission-packages": {
       "flake": false,
       "locked": {
-        "lastModified": 1789750202,
-        "narHash": "sha256-dTpCaoObmONi9iSXO8tTjExdAsBh6ba56Ajzty9Ywmk=",
+        "lastModified": 1791027715,
+        "narHash": "sha256-GsjtSZkUC+Op1Gm884/0CV9xDnoxIm4TzkcejgaOVuI=",
         "owner": "Audrique",
         "repo": "pi-packages",
-        "rev": "e787e7c08394bba74cf787687429ca8a510b0250",
+        "rev": "cd1db3f7e83423b32dd8fa0bb50bcab2ad4010b1",
         "type": "github"
       },
       "original": {
