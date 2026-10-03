@@ -24,9 +24,16 @@ try {
   process.env.XDG_CONFIG_HOME = join(dir, "config");
   process.env.XDG_CACHE_HOME = join(dir, "cache");
   process.env.PI_CODING_AGENT_DIR = agentDir;
-  const { discoverAndLoadExtensions } = await import("@earendil-works/pi-coding-agent");
+  const { DefaultResourceLoader, SettingsManager } = await import("@earendil-works/pi-coding-agent");
   for (const path of paths) {
-    const loaded = await discoverAndLoadExtensions([path], cwd, agentDir);
+    const loader = new DefaultResourceLoader({
+      cwd, agentDir,
+      settingsManager: SettingsManager.inMemory({ packages: [path] }),
+      noSkills: true, noPromptTemplates: true, noThemes: true,
+    });
+    await loader.reload();
+    const loaded = loader.getExtensions();
+    assert.deepEqual(loaded.warnings, [], `plugin must load without warnings: ${path}`);
     assert.deepEqual(loaded.errors, [], `plugin must load: ${path}`);
     assert.ok(loaded.extensions.length > 0, `plugin must expose at least one extension: ${path}`);
   }

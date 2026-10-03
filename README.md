@@ -126,14 +126,30 @@ nix flake update pi-interactive-subagents pi-permission-packages
 
 Each fork has its own derivation and runs its own typecheck/tests. The shared
 `dependencies/package.json` and npm lockfile pin a compatible dependency set;
-production dependencies are pruned separately from test tooling. Pi itself is
-pinned only through the `pi` flake input: test dependencies link `pi-ai`,
-`pi-coding-agent`, and `pi-tui` from that Nix package instead of installing a
-second copy through npm. Plugin Pi peers are supplied by the host CLI; npm peer
-auto-installation is disabled with `--legacy-peer-deps`. Integration
-checks load the installed packages, test parent/child permission routing without
-credentials or live panes, check launcher arguments/environment, and start the
-real Pi CLI with production dependencies only.
+production dependencies are pruned separately from test tooling. npm peer
+auto-installation is disabled with `--legacy-peer-deps`.
+
+Nix owns the extension ABI through `nix/host-packages.nix`: `pi-ai`,
+`pi-agent-core`, `pi-coding-agent`, `pi-tui`, and `typebox` come from the pinned
+Pi package, including TypeBox subpath imports. `nix/dependencies.nix` fetches
+unchanged npm inputs; the separate `nix/host-dependencies.nix` derivation composes
+the runtime and test trees without running npm again. It normalizes host-library
+declarations to wildcard peers, removes root and nested private copies, and
+links the host's package roots. Genuine third-party dependencies are preserved.
+The same manifest policy applies to packaged forks, without changing fork sources
+or hand-editing npm lockfiles. Build-input locks remain in the fetch derivation,
+not the composed runtime tree. A missing host package fails the build.
+
+Home Manager uses `lib.mkRuntime` with `programs.pi-runtime.package`, so a host
+package override supplies both the executable and its libraries. Overrides must
+provide the standard Pi Nix package layout, not just a standalone executable.
+
+Integration checks use Pi's real resource loader with package settings and
+reject warnings as well as errors. The `host-packaging` check verifies manifests,
+nested-copy removal, symlinks to the pinned host, and native ESM module identity
+for plugins and their configuration helper. Parent/child permission routing,
+launcher arguments/environment, and the production CLI are also checked without
+credentials or live panes.
 
 To update Pi, run `nix flake update pi`, then `nix flake check`. No npm Pi
 version pins or npm dependency hash changes are needed for a Pi-only update.

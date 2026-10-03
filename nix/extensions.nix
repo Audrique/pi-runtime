@@ -6,6 +6,7 @@
   permissionSource,
   dependencies,
   testDependencies,
+  hostPackages,
 }:
 let
   mkExtension =
@@ -38,6 +39,9 @@ let
         mkdir -p "$out/share/pi-extensions/${pname}"
         cd ${directory}
         cp -r ${lib.escapeShellArgs files} "$out/share/pi-extensions/${pname}/"
+        chmod u+w "$out/share/pi-extensions/${pname}/package.json"
+        node ${./host-packages.mjs} --manifest "$out/share/pi-extensions/${pname}/package.json" \
+          ${lib.escapeShellArg (builtins.toJSON hostPackages)}
         ln -s ${dependencies}/node_modules "$out/share/pi-extensions/${pname}/node_modules"
         runHook postInstall
       '';

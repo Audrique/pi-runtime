@@ -30,17 +30,21 @@
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       build =
-        system:
+        { system, pi ? inputs.pi.packages.${system}.default }:
         let
           pkgs = import nixpkgs { inherit system; };
-          dependencies = pkgs.callPackage ./nix/dependencies.nix {
-            pi = inputs.pi.packages.${system}.default;
+          hostPackages = import ./nix/host-packages.nix;
+          npmDependencies = pkgs.callPackage ./nix/dependencies.nix { };
+          composeDependencies = dependencies: pkgs.callPackage ./nix/host-dependencies.nix {
+            inherit dependencies hostPackages;
+            inherit pi;
           };
-          testDependencies = dependencies.override { production = false; };
+          dependencies = composeDependencies npmDependencies;
+          testDependencies = composeDependencies (npmDependencies.override { production = false; });
           extensions = pkgs.callPackage ./nix/extensions.nix {
             subagentSource = inputs.pi-interactive-subagents;
             permissionSource = inputs.pi-permission-packages;
-            inherit dependencies testDependencies;
+            inherit dependencies testDependencies hostPackages;
           };
           plugins = {
             web = "${dependencies}/node_modules/pi-web-access";
@@ -65,10 +69,13 @@
             extensions
             plugins
             bundle
+            hostPackages
             ;
         };
     in
     {
+      # Use the same host package for SDK composition and the launcher, including overrides.
+      lib.mkRuntime = build;
       homeModules.default = import ./nix/home-manager.nix { inherit inputs self; };
       homeManagerModules.default = self.homeModules.default;
       overlays.default = inputs.pi.overlays.default;
@@ -76,7 +83,7 @@
       packages = forAllSystems (
         system:
         let
-          runtime = build system;
+          runtime = build { inherit system; };
         in
         {
           default = runtime.bundle;
@@ -90,12 +97,14 @@
       checks = forAllSystems (
         system:
         let
-          runtime = build system;
+          runtime = build { inherit system; };
           inherit (runtime)
             pkgs
+            dependencies
             extensions
             plugins
             testDependencies
+            hostPackages
             ;
           configFile = ./tests/fixtures/orchestrator.json;
           mkLauncher = pkgs.callPackage ./nix/launcher.nix { };
@@ -116,6 +125,23 @@
           };
         in
         {
+          host-packaging = pkgs.runCommand "pi-runtime-host-packaging-check" {
+            nativeBuildInputs = [ pkgs.nodejs_24 ];
+            PI_HOST_PACKAGES = builtins.toJSON hostPackages;
+            PI_HOST_ENTRY = "${inputs.pi.packages.${system}.default}/lib/node_modules/@earendil-works/pi-coding-agent/package.json";
+            PI_DEPENDENCY_ROOTS = builtins.toJSON [ dependencies testDependencies ];
+            PI_PLUGIN_PATHS = builtins.toJSON (builtins.attrValues plugins);
+            PI_FORK_MANIFESTS = builtins.toJSON [
+              "${extensions.subagents}/${extensions.subagents.extensionPath}/package.json"
+              "${extensions.permissions}/${extensions.permissions.extensionPath}/package.json"
+            ];
+          } ''
+            cp -r ${./tests} tests
+            cp -r ${./nix} nix
+            node --test tests/host-packages.test.mjs
+            node --experimental-import-meta-resolve tests/host-dependencies.mjs
+            touch "$out"
+          '';
           subagents = extensions.subagents.overrideAttrs { doCheck = true; };
           permissions = extensions.permissions.overrideAttrs { doCheck = true; };
           production-cli =
@@ -186,7 +212,7 @@
       devShells = forAllSystems (
         system:
         let
-          pkgs = (build system).pkgs;
+          pkgs = (build { inherit system; }).pkgs;
         in
         {
           default = pkgs.mkShell {

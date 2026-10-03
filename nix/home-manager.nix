@@ -7,14 +7,17 @@
 }:
 let
   cfg = config.programs.pi-runtime;
-  runtime = self.packages.${pkgs.stdenv.hostPlatform.system};
+  runtime = self.lib.mkRuntime {
+    system = pkgs.stdenv.hostPlatform.system;
+    pi = cfg.package;
+  };
   configFile = pkgs.writeText "pi-orchestrator.json" (builtins.toJSON cfg.settings);
   mkLauncher = pkgs.callPackage ./launcher.nix { };
-  plugins = runtime.extensions.plugins;
+  plugins = runtime.plugins;
   launcher = mkLauncher {
     pi = cfg.package;
     herdr = cfg.herdrPackage;
-    inherit (runtime) subagents permissions;
+    inherit (runtime.extensions) subagents permissions;
     inherit plugins configFile;
     agentDir = "${config.home.homeDirectory}/.pi/agent";
   };
