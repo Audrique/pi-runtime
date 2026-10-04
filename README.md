@@ -38,6 +38,61 @@ by Pi on startup. Configuration goes into the Nix store: never include secrets.
 The module exposes `package` and `herdrPackage` overrides under
 `programs.pi-runtime`; Pi's usual Home Manager settings remain available.
 
+## Local dictation
+
+The Home Manager module optionally enables local speech-to-text inside Pi:
+
+```nix
+programs.pi-runtime.dictation = {
+  enable = true;
+  model = "small";
+  language = "auto";
+  shortcut = "f8";
+};
+```
+
+Restart Pi after rebuilding. Press **F8** to start recording, speak, then press
+**F8** again to transcribe into the editor. Review the text and press Enter to
+send; dictation never submits automatically. `/dictate` also toggles recording,
+`/dictate-cancel` discards it, and `/dictate-help` shows the configured backend.
+
+The runtime owns all packaging and glue. It uses the unmodified published
+`pi-dictation` extension, its pinned `cli-spinners` dependency, PipeWire's
+`pw-record`, and `whisper.cpp`. Model weights are pinned by revision and hash and
+fetched by Nix, not downloaded at Pi startup. No upstream fork, source patches,
+runtime npm installation, transcription server, or API key is needed. Audio
+transcription remains local even when Pi uses a cloud coding model.
+
+Available models are `tiny`, `base`, `small`, `medium`, their `.en` English-only
+variants, `large-v3`, and `large-v3-turbo`. Other models are multilingual. Set
+`language` to a Whisper language code to avoid detection, or keep `auto`.
+`threads`, `captureTarget` (a PipeWire capture node name/serial), `timeoutMs`, and
+`maxRecordingMs` are also configurable; both duration limits default to two
+minutes. Package overrides are available as `package` and `whisperPackage`.
+Enable this only on machines with a local PipeWire microphone session; it is
+disabled by default, including for WSL and headless consumers.
+
+Configuration is exported by pi.nix's declarative launcher, not by a login-time
+shell variable or a writable model selector. Change settings in Nix, not with
+`/dictate-config`: its saved values cannot override the launcher. The runtime does
+not create a managed `~/.pi/agent/pi-dictation.json` symlink, since upstream's
+interactive save would replace it. An existing malformed file can still block
+recording; remove or repair that optional file if Pi reports a configuration
+error. The published release and schema differ from GitHub main, so review the
+configuration contract before updating its pin.
+
+Checks cover enabled/disabled runtime-module wiring with the four existing
+plugins, real Pi package/extension loading, host-library ownership,
+authoritative launcher settings, and actual offline transcription of a public
+prerecorded speech sample. They do not access a microphone or prove live capture,
+cancellation, or audible/visual feedback on your desktop. After activation, test
+recording, insertion without submission, `/dictate-cancel`, and restarting Pi.
+
+```sh
+nix build .#checks.x86_64-linux.dictation .#checks.x86_64-linux.dictation-transcription
+nix run .#dictation-transcribe -- /path/to/recording.wav
+```
+
 ## Herdr notifications
 
 The launcher includes `extensions/herdr-notifications.ts`; do **not** also install

@@ -23,7 +23,10 @@ let
   };
 in
 {
-  imports = [ inputs.pi.homeModules.default ];
+  imports = [
+    inputs.pi.homeModules.default
+    ./dictation/home-manager.nix
+  ];
 
   options.programs.pi-runtime = {
     enable = lib.mkEnableOption "the guarded Pi runtime";

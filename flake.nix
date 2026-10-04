@@ -30,15 +30,20 @@
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       build =
-        { system, pi ? inputs.pi.packages.${system}.default }:
+        {
+          system,
+          pi ? inputs.pi.packages.${system}.default,
+        }:
         let
           pkgs = import nixpkgs { inherit system; };
           hostPackages = import ./nix/host-packages.nix;
           npmDependencies = pkgs.callPackage ./nix/dependencies.nix { };
-          composeDependencies = dependencies: pkgs.callPackage ./nix/host-dependencies.nix {
-            inherit dependencies hostPackages;
-            inherit pi;
-          };
+          composeDependencies =
+            dependencies:
+            pkgs.callPackage ./nix/host-dependencies.nix {
+              inherit dependencies hostPackages;
+              inherit pi;
+            };
           dependencies = composeDependencies npmDependencies;
           testDependencies = composeDependencies (npmDependencies.override { production = false; });
           extensions = pkgs.callPackage ./nix/extensions.nix {
@@ -52,6 +57,7 @@
             todo = "${dependencies}/node_modules/@juicesharp/rpiv-todo";
             tuicr = "${dependencies}/node_modules/@joelazar/pi-tuicr";
           };
+          dictation = (pkgs.callPackage ./nix/dictation/assets.nix { }) { };
           bundle = pkgs.symlinkJoin {
             name = "pi-runtime-extensions";
             paths = [
@@ -69,6 +75,7 @@
             extensions
             plugins
             bundle
+            dictation
             hostPackages
             ;
         };
@@ -91,6 +98,9 @@
           inherit (runtime) dependencies;
           test-dependencies = runtime.testDependencies;
           inherit (runtime.extensions) subagents permissions;
+          dictation = runtime.dictation.extension;
+          dictation-model = runtime.dictation.model;
+          dictation-transcribe = runtime.dictation.transcriber;
         }
       );
 
@@ -107,6 +117,12 @@
             hostPackages
             ;
           configFile = ./tests/fixtures/orchestrator.json;
+          dictationChecks = pkgs.callPackage ./nix/dictation/checks.nix {
+            dictation = runtime.dictation;
+            pi = inputs.pi.packages.${system}.default;
+            piLibrary = inputs.pi.lib;
+            whisperPackage = pkgs.whisper-cpp;
+          };
           mkLauncher = pkgs.callPackage ./nix/launcher.nix { };
           productionLauncher = mkLauncher {
             pi = inputs.pi.packages.${system}.default;
@@ -125,23 +141,37 @@
           };
         in
         {
-          host-packaging = pkgs.runCommand "pi-runtime-host-packaging-check" {
-            nativeBuildInputs = [ pkgs.nodejs_24 ];
-            PI_HOST_PACKAGES = builtins.toJSON hostPackages;
-            PI_HOST_ENTRY = "${inputs.pi.packages.${system}.default}/lib/node_modules/@earendil-works/pi-coding-agent/package.json";
-            PI_DEPENDENCY_ROOTS = builtins.toJSON [ dependencies testDependencies ];
-            PI_PLUGIN_PATHS = builtins.toJSON (builtins.attrValues plugins);
-            PI_FORK_MANIFESTS = builtins.toJSON [
-              "${extensions.subagents}/${extensions.subagents.extensionPath}/package.json"
-              "${extensions.permissions}/${extensions.permissions.extensionPath}/package.json"
-            ];
-          } ''
-            cp -r ${./tests} tests
-            cp -r ${./nix} nix
-            node --test tests/host-packages.test.mjs
-            node --experimental-import-meta-resolve tests/host-dependencies.mjs
-            touch "$out"
-          '';
+          dictation = dictationChecks.integration;
+          dictation-transcription = dictationChecks.transcription;
+          dictation-wiring = pkgs.callPackage ./nix/dictation/wiring-check.nix {
+            runtimeModule = self.homeModules.default;
+            inherit plugins;
+          };
+          host-packaging =
+            pkgs.runCommand "pi-runtime-host-packaging-check"
+              {
+                nativeBuildInputs = [ pkgs.nodejs_24 ];
+                PI_HOST_PACKAGES = builtins.toJSON hostPackages;
+                PI_HOST_ENTRY = "${
+                  inputs.pi.packages.${system}.default
+                }/lib/node_modules/@earendil-works/pi-coding-agent/package.json";
+                PI_DEPENDENCY_ROOTS = builtins.toJSON [
+                  dependencies
+                  testDependencies
+                ];
+                PI_PLUGIN_PATHS = builtins.toJSON (builtins.attrValues plugins);
+                PI_FORK_MANIFESTS = builtins.toJSON [
+                  "${extensions.subagents}/${extensions.subagents.extensionPath}/package.json"
+                  "${extensions.permissions}/${extensions.permissions.extensionPath}/package.json"
+                ];
+              }
+              ''
+                cp -r ${./tests} tests
+                cp -r ${./nix} nix
+                node --test tests/host-packages.test.mjs
+                node --experimental-import-meta-resolve tests/host-dependencies.mjs
+                touch "$out"
+              '';
           subagents = extensions.subagents.overrideAttrs { doCheck = true; };
           permissions = extensions.permissions.overrideAttrs { doCheck = true; };
           production-cli =
@@ -155,9 +185,7 @@
                 export HOME="$TMPDIR/home"
                 export PI_OFFLINE=1
                 mkdir -p "$HOME"
-                test "$(${productionLauncher}/bin/pi --version)" = "${
-                  inputs.pi.packages.${system}.default.version
-                }"
+                test "$(${productionLauncher}/bin/pi --version)" = "${inputs.pi.packages.${system}.default.version}"
                 node ${./tests/cli.mjs}
                 touch "$out"
               '';
