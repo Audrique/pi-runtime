@@ -3,9 +3,11 @@
   lib,
   pkgs,
   ...
-}:
+}@args:
 let
   cfg = config.programs.pi-runtime.dictation;
+  osConfig = args.osConfig or (config._module.args.osConfig or { });
+  isWSL = lib.isAttrs osConfig && (osConfig.wsl.enable or false);
   models = import ./models.nix;
   assets = (pkgs.callPackage ./assets.nix { }) cfg;
 in
@@ -49,10 +51,27 @@ in
       description = "Number of CPU threads used by Whisper.";
     };
 
+    captureBackend = lib.mkOption {
+      type = lib.types.enum [
+        "pipewire"
+        "pulseaudio"
+      ];
+      default = if isWSL then "pulseaudio" else "pipewire";
+      defaultText = lib.literalExpression ''if osConfig.wsl.enable or false then "pulseaudio" else "pipewire"'';
+      description = "Microphone backend: PipeWire normally, or WSLg's existing PulseAudio server on NixOS-WSL.";
+    };
+
+    pulseServer = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = if isWSL then "unix:/mnt/wslg/PulseServer" else null;
+      defaultText = lib.literalExpression ''if osConfig.wsl.enable or false then "unix:/mnt/wslg/PulseServer" else null'';
+      description = "PulseAudio server address. Null uses the client's environment/configuration; NixOS-WSL defaults to WSLg's socket.";
+    };
+
     captureTarget = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "PipeWire capture node name or serial; null uses the system's default microphone.";
+      description = "PipeWire capture node name/serial or PulseAudio source name; null uses the server's default microphone.";
     };
 
     timeoutMs = lib.mkOption {

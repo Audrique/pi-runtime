@@ -6,13 +6,21 @@
   language ? "auto",
   shortcut ? "f8",
   threads ? 4,
+  captureBackend ? "pipewire",
+  pulseServer ? null,
   captureTarget ? null,
   timeoutMs ? 120000,
   maxRecordingMs ? 120000,
   ...
 }:
+assert builtins.elem captureBackend [
+  "pipewire"
+  "pulseaudio"
+];
 let
   models = import ./models.nix;
+  isPulse = captureBackend == "pulseaudio";
+  recorder = if isPulse then "${pkgs.pulseaudio}/bin/parecord" else "${pkgs.pipewire}/bin/pw-record";
   modelFile = pkgs.fetchurl {
     name = "ggml-${model}.bin";
     url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/${models.revision}/ggml-${model}.bin";
@@ -43,11 +51,20 @@ let
     spinner = "arc";
     recordCommand = lib.concatStringsSep " " (
       [
-        (lib.escapeShellArg "${pkgs.pipewire}/bin/pw-record")
-        "--format s16 --rate 16000 --channels 1"
+        (lib.escapeShellArg recorder)
+        (
+          if isPulse then
+            "--file-format=wav --format=s16le --rate=16000 --channels=1 --latency-msec=100"
+          else
+            "--format s16 --rate 16000 --channels 1"
+        )
+      ]
+      ++ lib.optionals (isPulse && pulseServer != null) [
+        "--server"
+        (lib.escapeShellArg pulseServer)
       ]
       ++ lib.optionals (captureTarget != null) [
-        "--target"
+        (if isPulse then "--device" else "--target")
         (lib.escapeShellArg captureTarget)
       ]
       ++ [ "{file}" ]
@@ -67,5 +84,11 @@ in
 {
   extension = package;
   model = modelFile;
-  inherit transcriber settings environment;
+  inherit
+    captureBackend
+    recorder
+    transcriber
+    settings
+    environment
+    ;
 }

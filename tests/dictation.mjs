@@ -21,8 +21,23 @@ for (const name of ["pi-coding-agent", "pi-tui"]) {
   assert.equal(existsSync(join(packagePath, "node_modules", "@earendil-works", name)), false,
     "the extension must not bundle private Pi libraries");
 }
-assert.match(settings.recordCommand, /\/nix\/store\/.*\/bin\/pw-record/);
-assert.match(settings.recordCommand, /--format s16 --rate 16000 --channels 1/);
+const backend = process.env.PI_DICTATION_CAPTURE_BACKEND;
+const recorder = process.env.PI_DICTATION_RECORDER;
+assert.ok(recorder && (settings.recordCommand.startsWith(`${recorder} `) ||
+  settings.recordCommand.startsWith(`'${recorder}' `)));
+if (backend === "pipewire") {
+  assert.match(recorder, /\/bin\/pw-record$/);
+  assert.match(settings.recordCommand, /--format s16 --rate 16000 --channels 1/);
+} else {
+  assert.equal(backend, "pulseaudio");
+  assert.match(recorder, /\/bin\/parecord$/);
+  assert.match(settings.recordCommand, /--file-format=wav --format=s16le --rate=16000 --channels=1/);
+  assert.match(settings.recordCommand, /--latency-msec=100/);
+  // Verify the packaged client supports WAV without connecting to any server.
+  assert.match(execFileSync(recorder, ["--list-file-formats"], {
+    encoding: "utf8", timeout: 10000,
+  }), /WAV \(Microsoft\)/);
+}
 assert.match(settings.transcribeCommand, /\/nix\/store\/.*\/bin\/pi-dictation-transcribe/);
 assert.ok(settings.recordCommand.endsWith("{file}"));
 assert.ok(settings.transcribeCommand.endsWith("{file}"));

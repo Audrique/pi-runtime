@@ -123,6 +123,15 @@
             piLibrary = inputs.pi.lib;
             whisperPackage = pkgs.whisper-cpp;
           };
+          pulseDictationChecks = pkgs.callPackage ./nix/dictation/checks.nix {
+            dictation = (pkgs.callPackage ./nix/dictation/assets.nix { }) {
+              captureBackend = "pulseaudio";
+              pulseServer = "unix:/mnt/wslg/PulseServer";
+            };
+            pi = inputs.pi.packages.${system}.default;
+            piLibrary = inputs.pi.lib;
+            whisperPackage = pkgs.whisper-cpp;
+          };
           mkLauncher = pkgs.callPackage ./nix/launcher.nix { };
           productionLauncher = mkLauncher {
             pi = inputs.pi.packages.${system}.default;
@@ -142,6 +151,7 @@
         in
         {
           dictation = dictationChecks.integration;
+          dictation-pulse = pulseDictationChecks.integration;
           dictation-transcription = dictationChecks.transcription;
           dictation-wiring = pkgs.callPackage ./nix/dictation/wiring-check.nix {
             runtimeModule = self.homeModules.default;

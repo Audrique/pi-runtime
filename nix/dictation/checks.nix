@@ -34,6 +34,8 @@ in
         PI_OFFLINE = "1";
         PI_DICTATION_HOST = "${pi}/lib/node_modules/@earendil-works/pi-coding-agent/package.json";
         PI_DICTATION_PACKAGE = toString dictation.extension;
+        PI_DICTATION_CAPTURE_BACKEND = dictation.captureBackend;
+        PI_DICTATION_RECORDER = dictation.recorder;
         PI_DICTATION_SETTINGS = settingsFile;
         PI_DICTATION_ENVIRONMENT = builtins.toJSON dictation.environment;
         PI_DICTATION_EXECUTABLE = "${testPi}/bin/pi";

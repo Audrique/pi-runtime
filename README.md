@@ -58,19 +58,33 @@ send; dictation never submits automatically. `/dictate` also toggles recording,
 
 The runtime owns all packaging and glue. It uses the unmodified published
 `pi-dictation` extension, its pinned `cli-spinners` dependency, PipeWire's
-`pw-record`, and `whisper.cpp`. Model weights are pinned by revision and hash and
-fetched by Nix, not downloaded at Pi startup. No upstream fork, source patches,
-runtime npm installation, transcription server, or API key is needed. Audio
+`pw-record` (or PulseAudio's `parecord` on WSLg), and `whisper.cpp`. Model weights
+are pinned by revision and hash and fetched by Nix, not downloaded at Pi startup.
+No upstream fork, source patches, runtime npm installation, transcription server,
+or API key is needed. Audio
 transcription remains local even when Pi uses a cloud coding model.
 
 Available models are `tiny`, `base`, `small`, `medium`, their `.en` English-only
 variants, `large-v3`, and `large-v3-turbo`. Other models are multilingual. Set
 `language` to a Whisper language code to avoid detection, or keep `auto`.
-`threads`, `captureTarget` (a PipeWire capture node name/serial), `timeoutMs`, and
-`maxRecordingMs` are also configurable; both duration limits default to two
-minutes. Package overrides are available as `package` and `whisperPackage`.
-Enable this only on machines with a local PipeWire microphone session; it is
-disabled by default, including for WSL and headless consumers.
+`threads`, `captureTarget` (a PipeWire node name/serial or PulseAudio source
+name), `timeoutMs`, and `maxRecordingMs` are also configurable; both duration
+limits default to two minutes. Package overrides are available as `package`
+and `whisperPackage`. Dictation is disabled by default; enable it only where a
+microphone session is available.
+
+On NixOS-WSL the module automatically selects `captureBackend = "pulseaudio"`
+and `pulseServer = "unix:/mnt/wslg/PulseServer"`. WSLg's existing server forwards
+the Windows default microphone; no local PulseAudio or PipeWire daemon is
+started. Other hosts default to `captureBackend = "pipewire"`. Both defaults
+can be overridden, and setting `pulseServer = null` uses PulseAudio's inherited
+environment/client configuration instead of a fixed address.
+
+WSL capture requires WSL2 with WSLg enabled, the `/mnt/wslg/PulseServer` socket,
+and Windows microphone permission for desktop apps. After rebuilding the WSL
+host and restarting Pi, test F8 start/stop and `/dictate-cancel`. If the socket
+is missing, check/update WSLg on Windows before testing; Nix configuration cannot
+create Windows microphone permissions or the WSLg audio server.
 
 Configuration is exported by pi.nix's declarative launcher, not by a login-time
 shell variable or a writable model selector. Change settings in Nix, not with
@@ -81,15 +95,19 @@ recording; remove or repair that optional file if Pi reports a configuration
 error. The published release and schema differ from GitHub main, so review the
 configuration contract before updating its pin.
 
-Checks cover enabled/disabled runtime-module wiring with the four existing
-plugins, real Pi package/extension loading, host-library ownership,
+Checks cover enabled/disabled desktop/standalone and WSL runtime-module wiring
+with the four existing plugins, real Pi package/extension loading for both
+backends, the PulseAudio client's WAV support, host-library ownership,
 authoritative launcher settings, and actual offline transcription of a public
 prerecorded speech sample. They do not access a microphone or prove live capture,
-cancellation, or audible/visual feedback on your desktop. After activation, test
-recording, insertion without submission, `/dictate-cancel`, and restarting Pi.
+Windows permissions, cancellation, or audible/visual feedback. After activation,
+test recording, insertion without submission, `/dictate-cancel`, and restarting Pi.
 
 ```sh
-nix build .#checks.x86_64-linux.dictation .#checks.x86_64-linux.dictation-transcription
+nix build \
+  .#checks.x86_64-linux.dictation \
+  .#checks.x86_64-linux.dictation-pulse \
+  .#checks.x86_64-linux.dictation-transcription
 nix run .#dictation-transcribe -- /path/to/recording.wav
 ```
 
